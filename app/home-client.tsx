@@ -10,8 +10,7 @@ import { ExerciseLibrary } from '@/components/exercise-library';
 import { WorkoutDay } from '@/components/workout-day';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Dumbbell, Calendar, Plus, Download, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Exercise } from '@/lib/exercisedb';
 import { format } from 'date-fns';
@@ -94,7 +93,7 @@ export function HomeClient({ initialData }: HomeClientProps) {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <Dumbbell className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+          <div className="h-16 w-16 text-blue-600 mx-auto mb-4" />
           <h1 className="text-4xl font-bold mb-2">RepSet</h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
             Your ultimate workout companion for planning, tracking, and achieving your fitness goals
@@ -134,7 +133,7 @@ export function HomeClient({ initialData }: HomeClientProps) {
             </div>
             {installPrompt && (
               <Button onClick={handleInstallPWA} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
+                <div className="h-4 w-4 mr-2" />
                 Install App
               </Button>
             )}
@@ -162,14 +161,34 @@ export function HomeClient({ initialData }: HomeClientProps) {
           </motion.div>
         </div>
 
-        {/* Exercise Library Modal */}
-        <Dialog open={isExerciseLibraryOpen} onOpenChange={setIsExerciseLibraryOpen}>
-          <DialogContent className="flex flex-col max-w-4xl h-[90vh] p-0 gap-0">
+        {/* Exercise Library Modal - Always mounted, controlled by visibility */}
+        <div
+          className={`fixed inset-0 z-50 transition-all duration-200 ${
+            isExerciseLibraryOpen 
+              ? 'opacity-100 pointer-events-auto' 
+              : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/80"
+            onClick={() => setIsExerciseLibraryOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <div 
+            className={`fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl h-[90vh] translate-x-[-50%] translate-y-[-50%] gap-0 border bg-background shadow-lg transition-all duration-200 sm:rounded-lg ${
+              isExerciseLibraryOpen 
+                ? 'scale-100' 
+                : 'scale-95'
+            }`}
+          >
+            {/* Header */}
             <div className="flex-shrink-0 bg-white dark:bg-gray-900 z-20 px-4 py-4 border-b mx-4 my-2">
               <div className="flex items-center justify-between">
-                <DialogHeader>
-                  <DialogTitle>Exercise Library</DialogTitle>
-                </DialogHeader>
+                <div>
+                  <h2 className="text-lg font-semibold leading-none tracking-tight">Exercise Library</h2>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -181,14 +200,16 @@ export function HomeClient({ initialData }: HomeClientProps) {
                 </Button>
               </div>
             </div>
+            
+            {/* Exercise Library Content - Always mounted */}
             <div className="flex-1 min-h-0">
               <ExerciseLibrary 
                 initialData={initialData}
                 onExerciseSelect={() => setIsExerciseLibraryOpen(false)} 
               />
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
