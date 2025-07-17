@@ -68,7 +68,6 @@ export function ExerciseFormDialog({ exercise, isOpen, onClose, onAdd }: Exercis
             className="h-6 w-6 rounded-md"
             onClick={onClose}
           >
-            <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </Button>
         </div>

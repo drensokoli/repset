@@ -50,52 +50,80 @@ const convertToSystemDayIndex = (ourDayIndex: number): number => {
 export function WorkoutCalendar() {
   const { template, weeklyData, selectedDay, setSelectedDay, isLoading, fetchWeeklyWorkoutData, setCurrentWeek } = useWorkoutStore();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [weekStart, setWeekStart] = useState(startOfWeek(currentDate, { weekStartsOn: 1 }));
+  const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [showCalendar, setShowCalendar] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Initialize week dates only when component mounts or when explicitly navigating weeks
+  // Initialize with today's date and week
   useEffect(() => {
-    const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-    setWeekStart(start);
+    const today = new Date();
+    const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    setCurrentDate(today);
+    setWeekStart(todayWeekStart);
+    setSelectedDay(convertDayIndex(today.getDay()));
   }, []); // Empty dependency array - only run on mount
 
   // Fetch weekly workout data when week changes
   useEffect(() => {
     fetchWeeklyWorkoutData(weekStart);
     setCurrentWeek(weekStart);
-    
-    // Auto-scroll to today if we're viewing the current week
-    const today = new Date();
-    const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
-    
-    if (isSameDay(todayWeekStart, weekStart)) {
-      // Small delay to ensure DOM is rendered
-      setTimeout(() => {
-        if (scrollRef.current) {
-          const daysSinceWeekStart = Math.floor((today.getTime() - todayWeekStart.getTime()) / (24 * 60 * 60 * 1000));
-          const isMobile = window.innerWidth < 640;
-          const cardWidth = isMobile ? 140 : 160;
-          const gap = 8;
-          const cardTotalWidth = cardWidth + gap;
-          
-          // Calculate scroll position - center today's card
-          const containerWidth = scrollRef.current.clientWidth;
-          const cardCenter = (daysSinceWeekStart * cardTotalWidth) + (cardWidth / 2);
-          const scrollPosition = cardCenter - (containerWidth / 2);
-          
-          // Ensure we don't scroll past boundaries
-          const maxScroll = scrollRef.current.scrollWidth - containerWidth;
-          const finalScrollPosition = Math.max(0, Math.min(scrollPosition, maxScroll));
-          
-          scrollRef.current.scrollTo({
-            left: finalScrollPosition,
-            behavior: 'smooth'
-          });
-        }
-      }, 200);
-    }
   }, [weekStart, fetchWeeklyWorkoutData, setCurrentWeek]);
+
+  // Handle scrolling when week or selected day changes
+  useEffect(() => {
+    // Small delay to ensure DOM is rendered
+    setTimeout(() => {
+      // Find the date in the current week that matches the selected day
+      // We need to find which day of the week corresponds to our selectedDay
+      for (let i = 0; i < 7; i++) {
+        const date = addDays(weekStart, i);
+        const dayIndex = convertDayIndex(date.getDay());
+        if (dayIndex === selectedDay) {
+          console.log('Scrolling to selected day:', date, 'selectedDay index:', selectedDay);
+          scrollToDay(date);
+          break;
+        }
+      }
+    }, 300);
+  }, [weekStart, selectedDay]);
+
+  // Helper function to scroll to a specific day
+  const scrollToDay = (targetDate: Date) => {
+    if (!scrollRef.current) return;
+    
+    // Find which card position this date corresponds to
+    // Cards are rendered as: weekStart + 0, weekStart + 1, ..., weekStart + 6
+    // So we need to find which day offset from weekStart this targetDate is
+    const daysSinceWeekStart = Math.floor((targetDate.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000));
+    
+    // Ensure we have a valid day position (0-6)
+    if (daysSinceWeekStart < 0 || daysSinceWeekStart > 6) {
+      console.log('Target date is not in current week:', targetDate, 'Week start:', weekStart);
+      return;
+    }
+    
+    // Card dimensions
+    const isMobile = window.innerWidth < 640;
+    const cardWidth = isMobile ? 140 : 160;
+    const gap = 8;
+    const cardTotalWidth = cardWidth + gap;
+    
+    // Calculate scroll position - center the target day's card
+    const containerWidth = scrollRef.current.clientWidth;
+    const cardCenter = (daysSinceWeekStart * cardTotalWidth) + (cardWidth / 2);
+    const scrollPosition = cardCenter - (containerWidth / 2);
+    
+    // Ensure we don't scroll past boundaries
+    const maxScroll = scrollRef.current.scrollWidth - containerWidth;
+    const finalScrollPosition = Math.max(0, Math.min(scrollPosition, maxScroll));
+    
+    console.log('Scrolling to day:', targetDate, 'Card position:', daysSinceWeekStart, 'Scroll to:', finalScrollPosition);
+    
+    scrollRef.current.scrollTo({
+      left: finalScrollPosition,
+      behavior: 'smooth'
+    });
+  };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeekStart = direction === 'next' 
@@ -106,81 +134,40 @@ export function WorkoutCalendar() {
     setWeekStart(newWeekStart);
     
     // Keep the same day of the week selected (e.g., if Tuesday was selected, select Tuesday of new week)
-    const newCurrentDate = addDays(newWeekStart, selectedDay === 0 ? 6 : selectedDay - 1); // Adjust for Monday=1 start
+    // Calculate which day of the week we're currently on (0=Monday, 1=Tuesday, etc.)
+    const currentDayOfWeek = Math.floor((currentDate.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000));
+    const newCurrentDate = addDays(newWeekStart, currentDayOfWeek);
+    
     setCurrentDate(newCurrentDate);
-    // selectedDay stays the same
+    // selectedDay stays the same as it represents the same day of the week
     
     // Scroll to the selected day in the new week
     setTimeout(() => {
-      if (scrollRef.current) {
-        // Convert selectedDay to card position (0-6 where 0=Monday, 6=Sunday)
-        const dayPosition = selectedDay === 0 ? 6 : selectedDay - 1;
-        
-        // Card dimensions
-        const isMobile = window.innerWidth < 640;
-        const cardWidth = isMobile ? 140 : 160;
-        const gap = 8;
-        const cardTotalWidth = cardWidth + gap;
-        
-        // Calculate scroll position - try to center the selected day
-        const containerWidth = scrollRef.current.clientWidth;
-        const cardCenter = (dayPosition * cardTotalWidth) + (cardWidth / 2);
-        const scrollPosition = cardCenter - (containerWidth / 2);
-        
-        // Ensure we don't scroll past boundaries
-        const maxScroll = scrollRef.current.scrollWidth - containerWidth;
-        const finalScrollPosition = Math.max(0, Math.min(scrollPosition, maxScroll));
-        
-        scrollRef.current.scrollTo({
-          left: finalScrollPosition,
-          behavior: 'smooth'
-        });
-      }
-    }, 150); // Slightly longer delay to ensure DOM is ready
+      scrollToDay(newCurrentDate);
+    }, 150);
   };
 
   const scrollToToday = () => {
     const today = new Date();
     const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
     
-    // Only fetch new data if today is in a different week
-    if (!isSameDay(todayWeekStart, weekStart)) {
-      setWeekStart(todayWeekStart);
-    }
+    console.log('ScrollToToday called - Today:', today, 'Current week start:', weekStart, 'Today week start:', todayWeekStart);
     
+    // Set today as current date and selected day
     setCurrentDate(today);
     setSelectedDay(convertDayIndex(today.getDay()));
     
-    // Scroll to today's card in mobile view
-    const scrollToTodayCard = () => {
-      if (scrollRef.current) {
-        // Calculate today's position in the week (0-6, where 0 is Monday - the week start)
-        const daysSinceWeekStart = Math.floor((today.getTime() - todayWeekStart.getTime()) / (24 * 60 * 60 * 1000));
-        
-        // Card dimensions
-        const isMobile = window.innerWidth < 640;
-        const cardWidth = isMobile ? 140 : 160;
-        const gap = 8;
-        const cardTotalWidth = cardWidth + gap;
-        
-        // Calculate scroll position - center today's card
-        const containerWidth = scrollRef.current.clientWidth;
-        const cardCenter = (daysSinceWeekStart * cardTotalWidth) + (cardWidth / 2);
-        const scrollPosition = cardCenter - (containerWidth / 2);
-        
-        // Ensure we don't scroll past boundaries
-        const maxScroll = scrollRef.current.scrollWidth - containerWidth;
-        const finalScrollPosition = Math.max(0, Math.min(scrollPosition, maxScroll));
-        
-        scrollRef.current.scrollTo({
-          left: finalScrollPosition,
-          behavior: 'smooth'
-        });
-      }
-    };
-    
-    // Small delay to ensure DOM is updated if we switched weeks
-    setTimeout(scrollToTodayCard, 100);
+    // Only fetch new data if today is in a different week
+    if (!isSameDay(todayWeekStart, weekStart)) {
+      console.log('Switching to today\'s week');
+      setWeekStart(todayWeekStart);
+    } else {
+      // If we're already in today's week, just scroll to today
+      console.log('Already in today\'s week, just scrolling');
+      setTimeout(() => {
+        scrollToDay(today);
+      }, 100);
+    }
   };
 
   const getDayWorkout = (date: Date): DayTemplate | null => {
@@ -196,15 +183,24 @@ export function WorkoutCalendar() {
     const newDayIndex = convertDayIndex(date.getDay());
     const newWeekStart = startOfWeek(date, { weekStartsOn: 1 });
     
-    // Only update week and fetch new data if we're selecting a date in a different week
-    if (!isSameDay(newWeekStart, weekStart)) {
-      setWeekStart(newWeekStart);
-    }
+    console.log('Date selected:', date, 'Day index:', newDayIndex);
     
     // Always update the selected day and current date (for UI state)
     setSelectedDay(newDayIndex);
     setCurrentDate(date);
     setShowCalendar(false);
+    
+    // Only update week and fetch new data if we're selecting a date in a different week
+    if (!isSameDay(newWeekStart, weekStart)) {
+      console.log('Switching to different week for selected date');
+      setWeekStart(newWeekStart);
+    } else {
+      // If we're in the same week, just scroll to the selected day
+      console.log('Same week, scrolling to selected day');
+      setTimeout(() => {
+        scrollToDay(date);
+      }, 100);
+    }
   };
 
   const isToday = (date: Date) => isSameDay(date, new Date());
