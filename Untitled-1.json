@@ -1,0 +1,217 @@
+{
+  "_id": {
+    "$oid": "687828a941e6a76ff58aa087"
+  },
+  "weekId": "2025-W30",
+  "userId": "687669a714905baf54e30841",
+  "createdAt": "2025-07-16T22:33:13.044Z",
+  "days": {
+    "0": {
+      "date": "2025-07-19",
+      "exercises": [],
+      "completed": false
+    },
+    "1": {
+      "date": "2025-07-20",
+      "exercises": [],
+      "completed": false
+    },
+    "2": {
+      "date": "2025-07-21",
+      "exercises": [],
+      "completed": false
+    },
+    "3": {
+      "date": "2025-07-22",
+      "exercises": [],
+      "completed": false
+    },
+    "4": {
+      "date": "2025-07-23",
+      "exercises": [
+        {
+          "id": "8d8qJQI-1752705182143",
+          "exerciseId": "8d8qJQI",
+          "name": "barbell reverse grip incline bench row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "order": 0
+        },
+        {
+          "id": "JGKowMS-1752705188262",
+          "exerciseId": "JGKowMS",
+          "name": "smith narrow row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/JGKowMS.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/JGKowMS.gif",
+          "order": 1
+        },
+        {
+          "id": "dmgMp3n-1752706690671",
+          "exerciseId": "dmgMp3n",
+          "name": "barbell incline row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/dmgMp3n.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/dmgMp3n.gif",
+          "order": 2
+        },
+        {
+          "id": "VPPtusI-1752706698441",
+          "exerciseId": "VPPtusI",
+          "name": "inverted row bent knees",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/VPPtusI.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/VPPtusI.gif",
+          "order": 3
+        },
+        {
+          "id": "JGKowMS-1752706704754",
+          "exerciseId": "JGKowMS",
+          "name": "smith narrow row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/JGKowMS.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/JGKowMS.gif",
+          "order": 4
+        },
+        {
+          "id": "8d8qJQI-1752706711138",
+          "exerciseId": "8d8qJQI",
+          "name": "barbell reverse grip incline bench row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "order": 5
+        },
+        {
+          "id": "JGKowMS-1752706717814",
+          "exerciseId": "JGKowMS",
+          "name": "smith narrow row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/JGKowMS.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/JGKowMS.gif",
+          "order": 6
+        },
+        {
+          "id": "VPPtusI-1752706724803",
+          "exerciseId": "VPPtusI",
+          "name": "inverted row bent knees",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/VPPtusI.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/VPPtusI.gif",
+          "order": 7
+        },
+        {
+          "id": "c8oybX6-1752706731911",
+          "exerciseId": "c8oybX6",
+          "name": "cable rope elevated seated row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/c8oybX6.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/c8oybX6.gif",
+          "order": 8
+        },
+        {
+          "id": "8d8qJQI-1752706738505",
+          "exerciseId": "8d8qJQI",
+          "name": "barbell reverse grip incline bench row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "order": 9
+        },
+        {
+          "id": "Ca76jUE-1752706745671",
+          "exerciseId": "Ca76jUE",
+          "name": "kettlebell alternating row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/Ca76jUE.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/Ca76jUE.gif",
+          "order": 10
+        },
+        {
+          "id": "8d8qJQI-1752706752061",
+          "exerciseId": "8d8qJQI",
+          "name": "barbell reverse grip incline bench row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "order": 11
+        },
+        {
+          "id": "8d8qJQI-1752706758337",
+          "exerciseId": "8d8qJQI",
+          "name": "barbell reverse grip incline bench row",
+          "sets": 3,
+          "reps": 12,
+          "weight": 0,
+          "notes": "",
+          "completed": true,
+          "imageUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "gifUrl": "https://v1.cdn.exercisedb.dev/media/8d8qJQI.gif",
+          "order": 12
+        }
+      ],
+      "completed": true
+    },
+    "5": {
+      "date": "2025-07-24",
+      "exercises": [],
+      "completed": false
+    },
+    "6": {
+      "date": "2025-07-25",
+      "exercises": [],
+      "completed": false
+    }
+  },
+  "updatedAt": "2025-07-16T23:00:48.914Z",
+  "weekStartDate": "2025-07-19"
+}

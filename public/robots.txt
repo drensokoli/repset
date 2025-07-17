@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/error
+
+# Sitemap
+Sitemap: https://repset.app/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1 
