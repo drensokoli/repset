@@ -54,8 +54,8 @@ export const metadata: Metadata = {
   viewport: {
     width: 'device-width',
     initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+    maximumScale: 5,
+    userScalable: true,
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
@@ -119,6 +119,14 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="RepSet" />
+        <meta name="apple-mobile-web-app-title" content="RepSet" />
+        <meta name="msapplication-starturl" content="/" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <script 
           type="application/ld+json"
           dangerouslySetInnerHTML={{

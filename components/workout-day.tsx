@@ -117,13 +117,25 @@ function SortableExerciseItem({
       <div className="flex flex-col space-y-4">
         {/* Header Section */}
         <div className="flex items-start gap-3">
-          {/* Drag Handle */}
+          {/* Drag Handle - Larger Touch Area */}
           <div 
-            className="flex-shrink-0 pt-1 cursor-grab active:cursor-grabbing"
+            className="flex-shrink-0 pt-1 cursor-grab active:cursor-grabbing touch-manipulation select-none"
             {...attributes}
             {...listeners}
+            style={{
+              touchAction: 'none', // Prevent browser scrolling during drag
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              minWidth: '24px',
+              minHeight: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <GripVertical className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+            <div className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <GripVertical className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+            </div>
           </div>
 
           {/* Checkbox */}
@@ -132,27 +144,28 @@ function SortableExerciseItem({
               checked={isCompleted}
               onCheckedChange={() => onToggleComplete(exercise.id)}
               aria-label="Toggle exercise completion"
+              className="select-none"
             />
           </div>
 
           {/* Exercise Info */}
-          <div className="flex-1">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className={`font-semibold ${isCompleted ? 'text-gray-500' : ''}`}>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className={`font-semibold text-sm sm:text-base break-words ${isCompleted ? 'text-gray-500' : ''}`}>
                   {exercise.name}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
                     <Target className="h-3 w-3" />
                     {exercise.sets} sets
                   </div>
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
                     <Timer className="h-3 w-3" />
                     {exercise.reps} reps
                   </div>
                   {exercise.weight && (
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
                       <Weight className="h-3 w-3" />
                       {exercise.weight} kg
                     </div>
@@ -161,44 +174,49 @@ function SortableExerciseItem({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onStartEdit(exercise)}
+                  className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                 >
                   <Edit2 className="h-4 w-4" />
+                  <span className="hidden sm:ml-2 sm:inline">Edit</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onRemove(exercise.id)}
-                  className="text-red-600 hover:text-red-800"
+                  className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 text-red-600 hover:text-red-800"
                 >
                   <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:ml-2 sm:inline">Remove</span>
                 </Button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Image Section - Centered Layout */}
+        {/* Image Section - Responsive Layout */}
         {(exercise.imageUrl || exercise.gifUrl) && (
-          <div className="flex flex-col md:flex-row gap-4 items-start">
+          <div className="flex flex-col gap-4 items-start">
             <div className="w-full flex justify-center">
-              <div className="relative aspect-video bg-white rounded-lg overflow-hidden w-full md:w-[300px]">
+              <div className="relative aspect-video bg-white rounded-lg overflow-hidden w-full max-w-[300px] select-none">
                 <Image
                   src={exercise.imageUrl || exercise.gifUrl || ''}
                   alt={exercise.name}
                   fill
                   loading="lazy"
-                  className="object-contain"
+                  className="object-contain pointer-events-none"
                   sizes="(max-width: 768px) 100vw, 300px"
+                  draggable={false}
+                  style={{ userSelect: 'none' }}
                 />
               </div>
             </div>
             {exercise.notes && (
-              <div className="text-sm text-gray-600 dark:text-gray-400 w-full md:flex-1">
+              <div className="text-sm text-gray-600 dark:text-gray-400 w-full select-none">
                 <strong>Notes:</strong> {exercise.notes}
               </div>
             )}
@@ -207,7 +225,7 @@ function SortableExerciseItem({
 
         {/* Notes Section (when no image) */}
         {!exercise.imageUrl && !exercise.gifUrl && exercise.notes && (
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="text-sm text-gray-600 dark:text-gray-400 select-none">
             <strong>Notes:</strong> {exercise.notes}
           </div>
         )}
@@ -296,13 +314,38 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 10, // Increased for better mobile handling
+        delay: 100,   // Add delay to prevent accidental drags
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Prevent text selection during drag operations
+  useEffect(() => {
+    if (activeId) {
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
+      // Prevent scrolling during drag on mobile
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+
+    return () => {
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [activeId]);
 
   // Auto-scroll functionality for mobile
   useEffect(() => {
@@ -469,12 +512,13 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold">
+        {/* Responsive Header - Stack on Mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-xl sm:text-2xl font-bold">
             {DAYS[selectedDay]} Workout
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <Badge variant="outline" className="text-xs sm:text-sm">
               {completedExercises}/{exercises.length} completed
             </Badge>
             {exercises.length > 0 && (
@@ -482,15 +526,28 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
                 variant={currentDayLog?.completed ? "default" : "outline"}
                 size="sm"
                 onClick={markDayCompleted}
+                className="w-full sm:w-auto"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                {currentDayLog?.completed ? 'Completed' : 'Mark Complete'}
+                <span className="hidden sm:inline">
+                  {currentDayLog?.completed ? 'Completed' : 'Mark Complete'}
+                </span>
+                <span className="sm:hidden">
+                  {currentDayLog?.completed ? 'Done' : 'Complete'}
+                </span>
               </Button>
             )}
           </div>
         </div>
       </CardHeader>
-      <CardContent ref={scrollContainerRef}>
+      <CardContent 
+        ref={scrollContainerRef}
+        className="touch-pan-y" 
+        style={{ 
+          touchAction: activeId ? 'none' : 'pan-y',
+          overscrollBehavior: 'contain'
+        }}
+      >
         <div className="space-y-4">
           {exercises.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -559,33 +616,36 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
               
               <DragOverlayComponent>
                 {activeExercise ? (
-                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 shadow-2xl border-blue-200 dark:border-blue-800 border-2 transform rotate-2">
+                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 shadow-2xl border-blue-200 dark:border-blue-800 border-2 transform rotate-1 select-none max-w-sm">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 pt-1">
-                        <GripVertical className="h-4 w-4 text-blue-500" />
+                        <div className="p-1 rounded bg-blue-100 dark:bg-blue-900">
+                          <GripVertical className="h-5 w-5 text-blue-500" />
+                        </div>
                       </div>
                       <div className="flex-shrink-0 pt-1">
                         <Checkbox
                           checked={false}
                           disabled
                           aria-label="Exercise completion status"
+                          className="select-none"
                         />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-blue-700 dark:text-blue-300">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-blue-700 dark:text-blue-300 text-sm sm:text-base break-words">
                           {activeExercise.name}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
                             <Target className="h-3 w-3" />
                             {activeExercise.sets} sets
                           </div>
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
                             <Timer className="h-3 w-3" />
                             {activeExercise.reps} reps
                           </div>
                           {activeExercise.weight && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
                               <Weight className="h-3 w-3" />
                               {activeExercise.weight} kg
                             </div>

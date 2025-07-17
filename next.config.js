@@ -3,6 +3,8 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  publicExcludes: ['!noprecache/**/*'],
+  buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -71,6 +73,18 @@ const withPWA = require('next-pwa')({
       },
     },
     {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        networkTimeoutSeconds: 10,
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 60 * 60 * 24, // 24 hours
+        },
+      },
+    },
+    {
       urlPattern: ({ request }) => request.destination === 'document',
       handler: 'NetworkFirst',
       options: {
@@ -87,7 +101,40 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['v2.exercisedb.io', 'v1.cdn.exercisedb.dev', 'lh3.googleusercontent.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'v1.cdn.exercisedb.dev',
+        port: '',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'v2.exercisedb.io',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.exercisedb.dev',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'exercisedb.io',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   experimental: {
     serverActions: true,
@@ -118,6 +165,10 @@ const nextConfig = {
       {
         source: '/manifest.json',
         headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/manifest+json',
+          },
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
