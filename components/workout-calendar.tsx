@@ -223,7 +223,7 @@ export function WorkoutCalendar() {
     <>
       <Card className="xl:w-fit w-full">
         <CardHeader className="space-y-4">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-start">
             <Button
               variant="outline"
               size="sm"
