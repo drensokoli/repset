@@ -60,11 +60,17 @@ interface SortableExerciseItemProps {
   isCompleted: boolean;
   editingExercise: string | null;
   editForm: Partial<WorkoutExercise>;
+  formErrors: {
+    sets?: string;
+    reps?: string;
+    duration?: string;
+  };
   onStartEdit: (exercise: WorkoutExercise) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onToggleComplete: (exerciseId: string) => void;
   onEditFormChange: (updates: Partial<WorkoutExercise>) => void;
+  onFormErrorChange: (errors: { sets?: string; reps?: string; duration?: string; }) => void;
   onRemove: (exerciseId: string) => void;
   isRemoving: boolean;
   onStartRemove: () => void;
@@ -77,12 +83,14 @@ function SortableExerciseItem({
   isCompleted,
   editingExercise,
   editForm,
+  formErrors,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
   onRemove,
   onToggleComplete,
   onEditFormChange,
+  onFormErrorChange,
   isRemoving,
   onStartRemove,
   onCancelRemove,
@@ -248,33 +256,36 @@ function SortableExerciseItem({
         {editingExercise === exercise.id && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
-              <Label htmlFor="sets">Sets</Label>
+              <Label htmlFor={`sets-${exercise.id}`}>Sets</Label>
               <Input
-                id="sets"
+                id={`sets-${exercise.id}`}
                 type="number"
                 value={editForm.sets || ''}
                 onChange={(e) => onEditFormChange({ ...editForm, sets: Number(e.target.value) })}
               />
+              <div className="text-xs text-red-500 mt-1" data-error-for={`sets-${exercise.id}`}></div>
             </div>
             {exercise.reps ? (
               <div>
-                <Label htmlFor="reps">Reps</Label>
+                <Label htmlFor={`reps-${exercise.id}`}>Reps</Label>
                 <Input
-                  id="reps"
+                  id={`reps-${exercise.id}`}
                   type="number"
                   value={editForm.reps || ''}
                   onChange={(e) => onEditFormChange({ ...editForm, reps: Number(e.target.value) })}
                 />
+                <div className="text-xs text-red-500 mt-1" data-error-for={`reps-${exercise.id}`}></div>
               </div>
             ) : exercise.duration && (
               <div>
-                <Label htmlFor="duration">Duration (s)</Label>
+                <Label htmlFor={`duration-${exercise.id}`}>Duration (s)</Label>
                 <Input
-                  id="duration"
+                  id={`duration-${exercise.id}`}
                   type="number"
                   value={editForm.duration || ''}
                   onChange={(e) => onEditFormChange({ ...editForm, duration: Number(e.target.value) })}
                 />
+                <div className="text-xs text-red-500 mt-1" data-error-for={`duration-${exercise.id}`}></div>
               </div>
             )}
             <div>
@@ -296,15 +307,11 @@ function SortableExerciseItem({
               />
             </div>
             <div className="md:col-span-3 flex justify-end gap-2">
-              <Button variant="outline" onClick={onCancelEdit}
-                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-              >
+              <Button variant="outline" onClick={onCancelEdit}>
                 <X className="h-4 w-4 mr-1" />
                 Cancel
               </Button>
-              <Button onClick={onSaveEdit}
-                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-              >
+              <Button onClick={onSaveEdit}>
                 <Save className="h-4 w-4 mr-1" />
                 Save
               </Button>
@@ -361,6 +368,11 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
   const [editingExercise, setEditingExercise] = useState<string | null>(null);
   const [removingExercise, setRemovingExercise] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<WorkoutExercise>>({});
+  const [formErrors, setFormErrors] = useState<{
+    sets?: string;
+    reps?: string;
+    duration?: string;
+  }>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -486,6 +498,46 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
 
   const saveEdit = () => {
     if (!editingExercise) return;
+
+    // Validate required fields
+    const errors: { [key: string]: string } = {};
+    
+    if (!editForm.sets || editForm.sets <= 0) {
+      errors.sets = "Sets cannot be empty";
+    }
+
+    const exercise = exercises.find(e => e.id === editingExercise);
+    if (exercise?.reps && (!editForm.reps || editForm.reps <= 0)) {
+      errors.reps = "Reps cannot be empty";
+    }
+    if (exercise?.duration && (!editForm.duration || editForm.duration <= 0)) {
+      errors.duration = "Duration cannot be empty";
+    }
+
+    // Update error states on inputs and error messages
+    const setsInput = document.querySelector(`#sets-${editingExercise}`) as HTMLInputElement;
+    const repsInput = document.querySelector(`#reps-${editingExercise}`) as HTMLInputElement;
+    const durationInput = document.querySelector(`#duration-${editingExercise}`) as HTMLInputElement;
+    const setsError = document.querySelector(`[data-error-for="sets-${editingExercise}"]`);
+    const repsError = document.querySelector(`[data-error-for="reps-${editingExercise}"]`);
+    const durationError = document.querySelector(`[data-error-for="duration-${editingExercise}"]`);
+
+    if (setsInput && setsError) {
+      setsInput.style.borderColor = errors.sets ? 'rgb(239 68 68)' : '';
+      setsError.textContent = errors.sets || '';
+    }
+    if (repsInput && repsError) {
+      repsInput.style.borderColor = errors.reps ? 'rgb(239 68 68)' : '';
+      repsError.textContent = errors.reps || '';
+    }
+    if (durationInput && durationError) {
+      durationInput.style.borderColor = errors.duration ? 'rgb(239 68 68)' : '';
+      durationError.textContent = errors.duration || '';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
 
     updateExercise(selectedDay, editingExercise, editForm);
     setEditingExercise(null);
@@ -655,11 +707,13 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
                             isCompleted={isCompleted}
                             editingExercise={editingExercise}
                             editForm={editForm}
+                            formErrors={formErrors}
                             onStartEdit={startEdit}
                             onSaveEdit={saveEdit}
                             onCancelEdit={cancelEdit}
                             onToggleComplete={toggleComplete}
                             onEditFormChange={setEditForm}
+                            onFormErrorChange={setFormErrors}
                             onRemove={removeExercise}
                             isRemoving={removingExercise === exercise.id}
                             onStartRemove={() => {
