@@ -649,7 +649,7 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
                 className="w-full sm:w-auto"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                {currentDayLog?.completed ? 'Completed' : 'Mark Day Complete'}
+                {currentDayLog?.completed ? 'Day Completed' : 'Mark Day Complete'}
               </Button>
             )}
           </div>

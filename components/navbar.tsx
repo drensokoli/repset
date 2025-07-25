@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Dumbbell, User, LogOut, Settings } from 'lucide-react';
 
@@ -20,10 +20,12 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-2">
-            <Dumbbell className="h-8 w-8 text-blue-600" />
+            <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+              <Dumbbell className="size-4" />
+            </div>
             <span className="text-xl font-bold">RepSet</span>
           </div>
-          
+
           {session?.user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
