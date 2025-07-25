@@ -177,17 +177,17 @@ export function HomeClient({ initialData }: HomeClientProps) {
           
           {/* Modal Content */}
           <div 
-            className={`fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl h-[90vh] translate-x-[-50%] translate-y-[-50%] gap-0 border bg-background shadow-lg transition-all duration-200 sm:rounded-lg ${
+            className={`fixed left-[50%] top-[50%] z-50 grid w-[95vw] max-w-4xl h-[85vh] sm:h-[90vh] translate-x-[-50%] translate-y-[-50%] gap-0 border bg-background shadow-lg transition-all duration-200  ${
               isExerciseLibraryOpen 
                 ? 'scale-100' 
                 : 'scale-95'
             }`}
           >
             {/* Header */}
-            <div className="flex-shrink-0 bg-white dark:bg-gray-900 z-20 px-4 py-4 border-b mx-4 my-2">
+            <div className="flex-shrink-0 bg-white dark:bg-gray-900 z-20 px-3 sm:px-4 py-3 sm:py-4 border-b">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold leading-none tracking-tight">Exercise Library</h2>
+                  <h2 className="text-base sm:text-lg font-semibold leading-none tracking-tight">Exercise Library</h2>
                 </div>
                 <Button
                   variant="ghost"
@@ -202,7 +202,7 @@ export function HomeClient({ initialData }: HomeClientProps) {
             </div>
             
             {/* Exercise Library Content - Always mounted */}
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ExerciseLibrary 
                 initialData={initialData}
                 onExerciseSelect={() => setIsExerciseLibraryOpen(false)} 

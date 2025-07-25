@@ -8,7 +8,7 @@ export interface WorkoutExercise {
   sets: number;
   reps: number;
   weight: number;
-  duration?: number;
+  duration: number;
   notes: string;
   imageUrl?: string;
   gifUrl?: string;

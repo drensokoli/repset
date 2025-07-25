@@ -36,9 +36,38 @@ export function ExerciseFormDialog({ exercise, isOpen, onClose, onAdd }: Exercis
   const [duration, setDuration] = useState(0);
   const [notes, setNotes] = useState('');
   const [type, setType] = useState<'reps' | 'duration'>('reps');
+  const [errors, setErrors] = useState<{
+    sets?: string;
+    reps?: string;
+    duration?: string;
+  }>({});
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    if (!sets || sets <= 0) {
+      newErrors.sets = 'Sets cannot be empty or zero';
+    }
+
+    if (type === 'reps' && (!reps || reps <= 0)) {
+      newErrors.reps = 'Reps cannot be empty or zero';
+    }
+
+    if (type === 'duration' && (!duration || duration <= 0)) {
+      newErrors.duration = 'Duration cannot be empty or zero';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     onAdd({
       id: `${exercise.id}-${Date.now()}`,
       exerciseId: exercise.id,
@@ -90,14 +119,27 @@ export function ExerciseFormDialog({ exercise, isOpen, onClose, onAdd }: Exercis
                 id="sets"
                 type="number"
                 min={1}
-                value={sets}
-                onChange={(e) => setSets(parseInt(e.target.value) || 1)}
+                value={sets || ''}
+                onChange={(e) => {
+                  setSets(parseInt(e.target.value) || 0);
+                  setErrors({ ...errors, sets: undefined });
+                }}
+                className={errors.sets ? 'border-red-500' : ''}
               />
+              {errors.sets && (
+                <p className="text-xs text-red-500 mt-1">{errors.sets}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="type">Type</Label>
-              <Select value={type} onValueChange={(value: 'reps' | 'duration') => setType(value)}>
+              <Select 
+                value={type} 
+                onValueChange={(value: 'reps' | 'duration') => {
+                  setType(value);
+                  setErrors({});
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -115,9 +157,16 @@ export function ExerciseFormDialog({ exercise, isOpen, onClose, onAdd }: Exercis
                   id="reps"
                   type="number"
                   min={1}
-                  value={reps}
-                  onChange={(e) => setReps(parseInt(e.target.value) || 1)}
+                  value={reps || ''}
+                  onChange={(e) => {
+                    setReps(parseInt(e.target.value) || 0);
+                    setErrors({ ...errors, reps: undefined });
+                  }}
+                  className={errors.reps ? 'border-red-500' : ''}
                 />
+                {errors.reps && (
+                  <p className="text-xs text-red-500 mt-1">{errors.reps}</p>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
@@ -126,9 +175,16 @@ export function ExerciseFormDialog({ exercise, isOpen, onClose, onAdd }: Exercis
                   id="duration"
                   type="number"
                   min={1}
-                  value={duration}
-                  onChange={(e) => setDuration(parseInt(e.target.value) || 1)}
+                  value={duration || ''}
+                  onChange={(e) => {
+                    setDuration(parseInt(e.target.value) || 0);
+                    setErrors({ ...errors, duration: undefined });
+                  }}
+                  className={errors.duration ? 'border-red-500' : ''}
                 />
+                {errors.duration && (
+                  <p className="text-xs text-red-500 mt-1">{errors.duration}</p>
+                )}
               </div>
             )}
 
@@ -137,9 +193,8 @@ export function ExerciseFormDialog({ exercise, isOpen, onClose, onAdd }: Exercis
               <Input
                 id="weight"
                 type="number"
-                min={0}
                 step={0.5}
-                value={weight}
+                value={weight || ''}
                 onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
               />
             </div>
@@ -156,7 +211,7 @@ export function ExerciseFormDialog({ exercise, isOpen, onClose, onAdd }: Exercis
             />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>

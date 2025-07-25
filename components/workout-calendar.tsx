@@ -5,10 +5,10 @@ import { useWorkoutStore, DayTemplate } from '@/lib/workout-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  CheckCircle, 
-  Plus, 
-  ChevronLeft, 
+import {
+  CheckCircle,
+  Plus,
+  ChevronLeft,
   ChevronRight,
   CalendarIcon,
   ArrowLeft,
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, addDays, subDays, isSameDay, startOfDay, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
+import { format, addDays, subDays, isSameDay, startOfDay, startOfWeek, endOfWeek, addWeeks, subWeeks, differenceInDays } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
@@ -71,8 +71,11 @@ export function WorkoutCalendar() {
 
   // Handle scrolling when week or selected day changes
   useEffect(() => {
-    // Small delay to ensure DOM is rendered
-    setTimeout(() => {
+    // Only proceed if we have a valid weekStart and selectedDay
+    if (!weekStart || selectedDay === undefined || !scrollRef.current) return;
+
+    // Small delay to ensure DOM is rendered and data is loaded
+    const timeoutId = setTimeout(() => {
       // Find the date in the current week that matches the selected day
       // We need to find which day of the week corresponds to our selectedDay
       for (let i = 0; i < 7; i++) {
@@ -84,41 +87,42 @@ export function WorkoutCalendar() {
           break;
         }
       }
-    }, 300);
-  }, [weekStart, selectedDay]);
+    }, 500); // Increased delay slightly to ensure everything is ready
+
+    return () => clearTimeout(timeoutId);
+  }, [weekStart, selectedDay, isLoading]); // Added isLoading dependency
 
   // Helper function to scroll to a specific day
   const scrollToDay = (targetDate: Date) => {
     if (!scrollRef.current) return;
-    
-    // Find which card position this date corresponds to
+
+    // Calculate which card position (0-6) corresponds to the target date
     // Cards are rendered as: weekStart + 0, weekStart + 1, ..., weekStart + 6
-    // So we need to find which day offset from weekStart this targetDate is
-    const daysSinceWeekStart = Math.floor((targetDate.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000));
-    
+    const dayPosition = differenceInDays(startOfDay(targetDate), startOfDay(weekStart));
+
     // Ensure we have a valid day position (0-6)
-    if (daysSinceWeekStart < 0 || daysSinceWeekStart > 6) {
+    if (dayPosition < 0 || dayPosition > 6) {
       console.log('Target date is not in current week:', targetDate, 'Week start:', weekStart);
       return;
     }
-    
-    // Card dimensions
+
+    // Card dimensions (should match the min-w classes in the component)
     const isMobile = window.innerWidth < 640;
-    const cardWidth = isMobile ? 140 : 160;
-    const gap = 8;
+    const cardWidth = isMobile ? 140 : 160; // matches min-w-[140px] sm:min-w-[160px]
+    const gap = 8; // matches gap-2 which is 8px
     const cardTotalWidth = cardWidth + gap;
-    
+
     // Calculate scroll position - center the target day's card
     const containerWidth = scrollRef.current.clientWidth;
-    const cardCenter = (daysSinceWeekStart * cardTotalWidth) + (cardWidth / 2);
+    const cardCenter = (dayPosition * cardTotalWidth) + (cardWidth / 2);
     const scrollPosition = cardCenter - (containerWidth / 2);
-    
+
     // Ensure we don't scroll past boundaries
     const maxScroll = scrollRef.current.scrollWidth - containerWidth;
     const finalScrollPosition = Math.max(0, Math.min(scrollPosition, maxScroll));
-    
-    console.log('Scrolling to day:', targetDate, 'Card position:', daysSinceWeekStart, 'Scroll to:', finalScrollPosition);
-    
+
+    console.log('Scrolling to day:', targetDate, 'Card position:', dayPosition, 'Scroll to:', finalScrollPosition);
+
     scrollRef.current.scrollTo({
       left: finalScrollPosition,
       behavior: 'smooth'
@@ -126,21 +130,21 @@ export function WorkoutCalendar() {
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
-    const newWeekStart = direction === 'next' 
+    const newWeekStart = direction === 'next'
       ? addWeeks(weekStart, 1)
       : subWeeks(weekStart, 1);
-    
+
     // Update week start (this will trigger data fetch and auto-scroll)
     setWeekStart(newWeekStart);
-    
+
     // Keep the same day of the week selected (e.g., if Tuesday was selected, select Tuesday of new week)
     // Calculate which day of the week we're currently on (0=Monday, 1=Tuesday, etc.)
     const currentDayOfWeek = Math.floor((currentDate.getTime() - weekStart.getTime()) / (24 * 60 * 60 * 1000));
     const newCurrentDate = addDays(newWeekStart, currentDayOfWeek);
-    
+
     setCurrentDate(newCurrentDate);
     // selectedDay stays the same as it represents the same day of the week
-    
+
     // Scroll to the selected day in the new week
     setTimeout(() => {
       scrollToDay(newCurrentDate);
@@ -150,13 +154,13 @@ export function WorkoutCalendar() {
   const scrollToToday = () => {
     const today = new Date();
     const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
-    
+
     console.log('ScrollToToday called - Today:', today, 'Current week start:', weekStart, 'Today week start:', todayWeekStart);
-    
+
     // Set today as current date and selected day
     setCurrentDate(today);
     setSelectedDay(convertDayIndex(today.getDay()));
-    
+
     // Only fetch new data if today is in a different week
     if (!isSameDay(todayWeekStart, weekStart)) {
       console.log('Switching to today\'s week');
@@ -172,7 +176,7 @@ export function WorkoutCalendar() {
 
   const getDayWorkout = (date: Date): DayTemplate | null => {
     if (!template) return null;
-    
+
     const dayIndex = convertDayIndex(date.getDay());
     const dayName = DAYS[dayIndex] as keyof typeof template;
     const dayTemplate = template[dayName] as DayTemplate;
@@ -182,14 +186,14 @@ export function WorkoutCalendar() {
   const handleDateSelect = (date: Date) => {
     const newDayIndex = convertDayIndex(date.getDay());
     const newWeekStart = startOfWeek(date, { weekStartsOn: 1 });
-    
+
     console.log('Date selected:', date, 'Day index:', newDayIndex);
-    
+
     // Always update the selected day and current date (for UI state)
     setSelectedDay(newDayIndex);
     setCurrentDate(date);
     setShowCalendar(false);
-    
+
     // Only update week and fetch new data if we're selecting a date in a different week
     if (!isSameDay(newWeekStart, weekStart)) {
       console.log('Switching to different week for selected date');
@@ -217,43 +221,33 @@ export function WorkoutCalendar() {
 
   return (
     <>
-      <Card className="w-full">
+      <Card className="xl:w-fit w-full">
         <CardHeader className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCalendar(true)}
-                className="font-medium"
-              >
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                {format(weekStart, 'MMMM yyyy')}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={scrollToToday}
-                className={cn(
-                  "ml-2",
-                  isToday(currentDate) && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
-                )}
-              >
-                Today
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')}>
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => navigateWeek('next')}>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="flex items-center justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCalendar(true)}
+              className="font-medium"
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              {format(weekStart, 'MMMM yyyy')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={scrollToToday}
+              className={cn(
+                "ml-2",
+                isToday(currentDate) && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+              )}
+            >
+              Today
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div 
+          <div
             ref={scrollRef}
             className="flex overflow-x-auto gap-2 pb-4 scrollbar-hide snap-x snap-mandatory"
           >
@@ -275,7 +269,7 @@ export function WorkoutCalendar() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
                   className={cn(
-                    'min-w-[140px] sm:min-w-[160px] p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 snap-center shrink-0',
+                    'min-w-[130px] sm:min-w-[160px] p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 snap-center shrink-0',
                     isSelected
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                       : 'border-gray-200 hover:border-gray-300 dark:border-gray-700',
@@ -302,7 +296,7 @@ export function WorkoutCalendar() {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="mt-1">
                       {exerciseCount > 0 ? (
                         <Badge variant="outline" className="text-xs">
@@ -320,6 +314,15 @@ export function WorkoutCalendar() {
               );
             })}
           </div>
+
+          <div className="flex justify-between">
+            <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => navigateWeek('next')}>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -328,12 +331,15 @@ export function WorkoutCalendar() {
           <DialogHeader>
             <DialogTitle>Select Date</DialogTitle>
           </DialogHeader>
-          <Calendar
-            mode="single"
-            selected={currentDate}
-            onSelect={(date) => date && handleDateSelect(date)}
-            initialFocus
-          />
+          <div className="w-full">
+            <Calendar
+              mode="single"
+              selected={currentDate}
+              onSelect={(date) => date && handleDateSelect(date)}
+              initialFocus
+              className="w-fit"
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </>

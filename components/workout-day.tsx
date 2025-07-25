@@ -8,18 +8,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { 
-  CheckCircle, 
-  Edit2, 
-  Trash2, 
-  Save, 
-  X, 
+import {
+  CheckCircle,
+  Edit2,
+  Trash2,
+  Save,
+  X,
   Plus,
   GripVertical,
   Timer,
   Target,
   Weight,
-  Loader2
+  Loader2,
+  Edit,
+  Trash
 } from 'lucide-react';
 import { useWorkoutStore, WorkoutExercise } from '@/lib/workout-store';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -61,13 +63,12 @@ interface SortableExerciseItemProps {
   onStartEdit: (exercise: WorkoutExercise) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
-  onRemove: (exerciseId: string) => void;
   onToggleComplete: (exerciseId: string) => void;
   onEditFormChange: (updates: Partial<WorkoutExercise>) => void;
-  deletingExercise: string | null;
-  onStartDelete: (exerciseId: string) => void;
-  onConfirmDelete: () => void;
-  onCancelDelete: () => void;
+  onRemove: (exerciseId: string) => void;
+  isRemoving: boolean;
+  onStartRemove: () => void;
+  onCancelRemove: () => void;
 }
 
 function SortableExerciseItem({
@@ -82,10 +83,9 @@ function SortableExerciseItem({
   onRemove,
   onToggleComplete,
   onEditFormChange,
-  deletingExercise,
-  onStartDelete,
-  onConfirmDelete,
-  onCancelDelete,
+  isRemoving,
+  onStartRemove,
+  onCancelRemove,
 }: SortableExerciseItemProps) {
   const {
     attributes,
@@ -113,20 +113,19 @@ function SortableExerciseItem({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ delay: index * 0.1 }}
-      className={`border rounded-lg p-4 transition-all duration-200 ${
-        isDragging
-          ? 'border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800'
-          : isCompleted 
-            ? 'border-green-200 dark:border-green-800 border-2' 
-            : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-      }`}
+      className={`border rounded-lg p-4 transition-all duration-200 ${isDragging
+        ? 'border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800'
+        : isCompleted
+          ? ''
+          : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+        }`}
     >
       {/* Main Content Container */}
       <div className="flex flex-col space-y-4">
         {/* Header Section */}
         <div className="flex items-start gap-3">
-          {/* Drag Handle */}
-          <div 
+          {/* Drag Handle - Larger Touch Area */}
+          <div
             className="flex-shrink-0 pt-1 cursor-grab active:cursor-grabbing touch-manipulation select-none"
             {...attributes}
             {...listeners}
@@ -146,119 +145,106 @@ function SortableExerciseItem({
             </div>
           </div>
 
-          {/* Checkbox */}
-          <div className="flex-shrink-0 pt-1">
-            <Checkbox
-              checked={isCompleted}
-              onCheckedChange={() => onToggleComplete(exercise.id)}
-              aria-label="Toggle exercise completion"
-              className="select-none"
-            />
-          </div>
-
-          {/* Exercise Info - Takes remaining space */}
+          {/* Exercise Info */}
           <div className="flex-1 min-w-0">
-            <h3 className={`font-semibold text-sm sm:text-base break-words pr-2 ${isCompleted ? 'text-gray-500' : ''}`}>
-              {exercise.name}
-            </h3>
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                <Target className="h-3 w-3" />
-                {exercise.sets} sets
+            <div className="flex flex-row justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h3 className={`font-semibold text-sm sm:text-base break-words`}>
+                  {exercise.name}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
+                    <Target className="h-3 w-3" />
+                    {exercise.sets} sets
+                  </div>
+                  {exercise.reps ? (
+                    <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
+                      <Timer className="h-3 w-3" />
+                      {exercise.reps} reps
+                    </div>
+                  ) : exercise.duration && (
+                    <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
+                      <Timer className="h-3 w-3" />
+                      {exercise.duration} s
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
+                    <Weight className="h-3 w-3" />
+                    {exercise.weight} kg
+                  </div>
+                </div>
               </div>
-              {exercise.duration ? (
-                <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                  <Timer className="h-3 w-3" />
-                  {exercise.duration}s
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                  <Timer className="h-3 w-3" />
-                  {exercise.reps} reps
-                </div>
-              )}
-              {exercise.weight ? (
-                <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                  <Weight className="h-3 w-3" />
-                  {exercise.weight} kg
-                </div>
-              ) : null}
-            </div>
-          </div>
 
-          {/* Action Buttons - Fixed Top Right */}
-          <div className="flex items-center gap-1 flex-shrink-0 self-start">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onStartEdit(exercise)}
-              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
-            >
-              <Edit2 className="h-4 w-4" />
-              <span className="hidden sm:ml-2 sm:inline">Edit</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onStartDelete(exercise.id)}
-              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 text-red-600 hover:text-red-800"
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:ml-2 sm:inline">Remove</span>
-            </Button>
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-1 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onStartEdit(exercise)}
+                  className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 select-none"
+                  style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+                >
+                  <Edit className="h-4 w-4" />
+                  <span className="hidden sm:ml-2 sm:inline">Edit</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onStartRemove}
+                  style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+                  className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 text-red-600 hover:text-red-800"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:ml-2 sm:inline">Remove</span>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Image Section - Improved Mobile Layout */}
+        {/* Image Section - Responsive Layout */}
         {(exercise.imageUrl || exercise.gifUrl) && (
-          <div className="mt-2">
+          <div className="flex flex-col gap-4 items-start">
             <div className="w-full flex justify-center">
-              <div className="relative aspect-video rounded-lg overflow-hidden w-full max-w-[280px] sm:max-w-[320px] select-none">
+              <div className="relative aspect-video bg-white rounded-lg overflow-hidden w-full max-w-[300px] select-none">
                 <Image
                   src={exercise.imageUrl || exercise.gifUrl || ''}
                   alt={exercise.name}
                   fill
                   loading="lazy"
                   className="object-contain pointer-events-none"
-                  sizes="(max-width: 768px) 280px, 320px"
+                  sizes="(max-width: 768px) 100vw, 300px"
                   draggable={false}
                   style={{ userSelect: 'none' }}
                 />
               </div>
             </div>
             {exercise.notes && (
-              <div className="text-sm text-gray-600 dark:text-gray-400 mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg select-none">
-                <span className="font-medium text-gray-700 dark:text-gray-300">Notes:</span> {exercise.notes}
+              <div className="text-sm text-gray-600 dark:text-gray-400 w-full select-none">
+                <strong>Notes:</strong> {exercise.notes}
               </div>
             )}
+            <Button
+              variant={isCompleted ? "default" : "outline"}
+              size="sm"
+              onClick={() => onToggleComplete(exercise.id)}
+              className="w-full"
+              style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              {isCompleted ? 'Done' : 'Complete'}
+            </Button>
           </div>
         )}
 
-        {/* Notes Section (when no image) - Improved Styling */}
+        {/* Notes Section (when no image) */}
         {!exercise.imageUrl && !exercise.gifUrl && exercise.notes && (
-          <div className="text-sm text-gray-600 dark:text-gray-400 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg select-none">
-            <span className="font-medium text-gray-700 dark:text-gray-300">Notes:</span> {exercise.notes}
+          <div className="text-sm text-gray-600 dark:text-gray-400 select-none">
+            <strong>Notes:</strong> {exercise.notes}
           </div>
         )}
 
-        {/* Delete Confirmation - Similar to Edit Form */}
-        {deletingExercise === exercise.id && (
-            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-              <Button variant="outline" onClick={onCancelDelete} className="order-2 sm:order-1">
-                <X className="h-4 w-4 mr-1.5" />
-                Cancel
-              </Button>
-              <Button 
-                onClick={onConfirmDelete} 
-                className="order-1 sm:order-2 bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
-              >
-                <Trash2 className="h-4 w-4 mr-1.5" />
-                Delete Exercise
-              </Button>
-          </div>
-        )}
-
-        {/* Edit Form - Improved Mobile Layout */}
+        {/* Edit Form */}
         {editingExercise === exercise.id && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
@@ -270,24 +256,27 @@ function SortableExerciseItem({
                 onChange={(e) => onEditFormChange({ ...editForm, sets: Number(e.target.value) })}
               />
             </div>
-            <div>
-              <Label htmlFor="reps">Reps</Label>
-              <Input
-                id="reps"
-                type="number"
-                value={editForm.reps || ''}
-                onChange={(e) => onEditFormChange({ ...editForm, reps: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="duration">Duration (s)</Label>
-              <Input
-                id="duration"
-                type="number"
-                value={editForm.duration || ''}
-                onChange={(e) => onEditFormChange({ ...editForm, duration: Number(e.target.value) })}
-              />
-            </div>
+            {exercise.reps ? (
+              <div>
+                <Label htmlFor="reps">Reps</Label>
+                <Input
+                  id="reps"
+                  type="number"
+                  value={editForm.reps || ''}
+                  onChange={(e) => onEditFormChange({ ...editForm, reps: Number(e.target.value) })}
+                />
+              </div>
+            ) : exercise.duration && (
+              <div>
+                <Label htmlFor="duration">Duration (s)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  value={editForm.duration || ''}
+                  onChange={(e) => onEditFormChange({ ...editForm, duration: Number(e.target.value) })}
+                />
+              </div>
+            )}
             <div>
               <Label htmlFor="weight">Weight (kg)</Label>
               <Input
@@ -307,13 +296,40 @@ function SortableExerciseItem({
               />
             </div>
             <div className="md:col-span-3 flex justify-end gap-2">
-              <Button variant="outline" onClick={onCancelEdit}>
+              <Button variant="outline" onClick={onCancelEdit}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
                 <X className="h-4 w-4 mr-1" />
                 Cancel
               </Button>
-              <Button onClick={onSaveEdit}>
+              <Button onClick={onSaveEdit}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
                 <Save className="h-4 w-4 mr-1" />
                 Save
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Remove Confirmation */}
+        {isRemoving && (
+          <div className="mt-4 border-t pt-4">
+            <p className="text-sm text-gray-600 mb-4 text-center font-semibold">Are you sure you want to remove this exercise?</p>
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={onCancelRemove}
+               style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => onRemove(exercise.id)}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Remove
               </Button>
             </div>
           </div>
@@ -329,22 +345,22 @@ interface WorkoutDayProps {
 }
 
 export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: WorkoutDayProps) {
-  const { 
+  const {
     template,
     weeklyData,
-    selectedDay, 
-    removeExerciseFromDay, 
-    updateExercise, 
+    selectedDay,
+    removeExerciseFromDay,
+    updateExercise,
     reorderExercises,
     toggleExerciseComplete,
     markDayComplete,
     isLoading,
     getCurrentDayLog
   } = useWorkoutStore();
-  
+
   const [editingExercise, setEditingExercise] = useState<string | null>(null);
+  const [removingExercise, setRemovingExercise] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<WorkoutExercise>>({});
-  const [deletingExercise, setDeletingExercise] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dropPosition, setDropPosition] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -390,7 +406,7 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
     if (!activeId || !scrollContainerRef.current) return;
 
     let autoScrollInterval: NodeJS.Timeout;
-    
+
     const handleMouseMove = (e: MouseEvent | TouchEvent) => {
       const container = scrollContainerRef.current;
       if (!container) return;
@@ -398,12 +414,12 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
       const rect = container.getBoundingClientRect();
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
       const relativeY = clientY - rect.top;
-      
+
       const scrollThreshold = 60; // pixels from edge to trigger scroll
       const scrollSpeed = 8;
-      
+
       clearInterval(autoScrollInterval);
-      
+
       if (relativeY < scrollThreshold) {
         // Scroll up
         autoScrollInterval = setInterval(() => {
@@ -445,20 +461,32 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
   const completedExercises = currentDayLog?.exercises.filter(e => e.completed).length || 0;
 
   const startEdit = (exercise: WorkoutExercise) => {
+    // If clicking Edit on the currently edited exercise, cancel the edit
+    if (editingExercise === exercise.id) {
+      setEditingExercise(null);
+      setEditForm({});
+      return;
+    }
+
+    // Close remove confirmation if it's open
+    if (removingExercise === exercise.id) {
+      setRemovingExercise(null);
+    }
+
+    // Otherwise, start editing the clicked exercise
     setEditingExercise(exercise.id);
-    setDeletingExercise(null); // Cancel any active delete
     setEditForm({
       sets: exercise.sets,
       reps: exercise.reps,
-      weight: exercise.weight,
       duration: exercise.duration,
+      weight: exercise.weight,
       notes: exercise.notes,
     });
   };
 
   const saveEdit = () => {
     if (!editingExercise) return;
-    
+
     updateExercise(selectedDay, editingExercise, editForm);
     setEditingExercise(null);
     setEditForm({});
@@ -473,22 +501,6 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
   const removeExercise = (exerciseId: string) => {
     removeExerciseFromDay(selectedDay, exerciseId);
     toast.success('Exercise removed');
-  };
-
-  const startDelete = (exerciseId: string) => {
-    setDeletingExercise(exerciseId);
-    setEditingExercise(null); // Cancel any active edit
-  };
-
-  const confirmDelete = () => {
-    if (!deletingExercise) return;
-    removeExerciseFromDay(selectedDay, deletingExercise);
-    setDeletingExercise(null);
-    toast.success('Exercise deleted');
-  };
-
-  const cancelDelete = () => {
-    setDeletingExercise(null);
   };
 
   const toggleComplete = (exerciseId: string) => {
@@ -508,7 +520,7 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    
+
     if (!over || !active) {
       setDropPosition(null);
       return;
@@ -516,7 +528,7 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
 
     const activeIndex = exercises.findIndex(exercise => exercise.id === active.id);
     const overIndex = exercises.findIndex(exercise => exercise.id === over.id);
-    
+
     if (activeIndex === -1 || overIndex === -1) {
       setDropPosition(null);
       return;
@@ -531,7 +543,7 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
       // Dragging up: position before the over item
       newPosition = overIndex;
     }
-    
+
     setDropPosition(newPosition);
   };
 
@@ -544,11 +556,11 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
 
       const newOrder = arrayMove(exercises, oldIndex, newIndex);
       const exerciseIds = newOrder.map(exercise => exercise.id);
-      
+
       reorderExercises(selectedDay, exerciseIds);
       toast.success('Exercise order updated');
     }
-    
+
     setActiveId(null);
     setDropPosition(null);
   };
@@ -585,21 +597,16 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
                 className="w-full sm:w-auto"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
-                <span className="hidden sm:inline">
-                  {currentDayLog?.completed ? 'Completed' : 'Mark Complete'}
-                </span>
-                <span className="sm:hidden">
-                  {currentDayLog?.completed ? 'Done' : 'Complete'}
-                </span>
+                {currentDayLog?.completed ? 'Completed' : 'Mark Day Complete'}
               </Button>
             )}
           </div>
         </div>
       </CardHeader>
-      <CardContent 
+      <CardContent
         ref={scrollContainerRef}
-        className="touch-pan-y" 
-        style={{ 
+        className="touch-pan-y"
+        style={{
           touchAction: activeId ? 'none' : 'pan-y',
           overscrollBehavior: 'contain'
         }}
@@ -607,7 +614,6 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
         <div className="space-y-4">
           {exercises.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <Plus className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No exercises added yet.</p>
               <p className="text-sm">Click the button below to add workouts.</p>
             </div>
@@ -635,7 +641,7 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
                       <div className="w-full h-0.5 bg-blue-500 rounded-full shadow-lg"></div>
                     </div>
                   )}
-                  
+
                   <AnimatePresence>
                     {exercises.map((exercise, index) => {
                       const logExercise = currentDayLog?.exercises.find((e: any) => e.id === exercise.id);
@@ -652,15 +658,20 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
                             onStartEdit={startEdit}
                             onSaveEdit={saveEdit}
                             onCancelEdit={cancelEdit}
-                            onRemove={removeExercise}
                             onToggleComplete={toggleComplete}
                             onEditFormChange={setEditForm}
-                            deletingExercise={deletingExercise}
-                            onStartDelete={startDelete}
-                            onConfirmDelete={confirmDelete}
-                            onCancelDelete={cancelDelete}
+                            onRemove={removeExercise}
+                            isRemoving={removingExercise === exercise.id}
+                            onStartRemove={() => {
+                              setRemovingExercise(exercise.id);
+                              if (editingExercise === exercise.id) {
+                                setEditingExercise(null);
+                                setEditForm({});
+                              }
+                            }}
+                            onCancelRemove={() => setRemovingExercise(null)}
                           />
-                          
+
                           {/* Drop line after this exercise */}
                           {dropPosition === index + 1 && (
                             <div className="h-1 flex items-center justify-center mt-4">
@@ -673,59 +684,9 @@ export function WorkoutDay({ isExerciseLibraryOpen, setIsExerciseLibraryOpen }: 
                   </AnimatePresence>
                 </div>
               </SortableContext>
-              
-              <DragOverlayComponent>
-                {activeExercise ? (
-                  <div className="border rounded-lg p-4 bg-white dark:bg-gray-900 shadow-2xl border-blue-200 dark:border-blue-800 border-2 transform rotate-1 select-none max-w-sm">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 pt-1">
-                        <div className="p-1 rounded bg-blue-100 dark:bg-blue-900">
-                          <GripVertical className="h-5 w-5 text-blue-500" />
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 pt-1">
-                        <Checkbox
-                          checked={false}
-                          disabled
-                          aria-label="Exercise completion status"
-                          className="select-none"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-blue-700 dark:text-blue-300 text-sm sm:text-base break-words">
-                          {activeExercise.name}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                            <Target className="h-3 w-3" />
-                            {activeExercise.sets} sets
-                          </div>
-                          {activeExercise.duration ? (
-                            <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                              <Timer className="h-3 w-3" />
-                              {activeExercise.duration}s
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                              <Timer className="h-3 w-3" />
-                              {activeExercise.reps} reps
-                            </div>
-                          )}
-                          {activeExercise.weight && (
-                            <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                              <Weight className="h-3 w-3" />
-                              {activeExercise.weight} kg
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </DragOverlayComponent>
             </DndContext>
           )}
-          
+
           {/* Add Exercise Button */}
           <Button
             className="w-full h-12 mt-4"
